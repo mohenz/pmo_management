@@ -277,40 +277,7 @@ textarea:focus {
     box-shadow: 0 0 10px var(--danger);
 }
 
-/* Inline Edit Styles */
-.badge-select {
-    padding: 0.25rem 0.5rem;
-    border-radius: 99px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    border: none;
-    cursor: pointer;
-    outline: none;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    appearance: none;
-    text-align: center;
-}
 
-select:not(.badge-select) {
-    border: 1px solid var(--border);
-    background: white;
-    padding: 0.25rem;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-input[type="text"],
-input[type="date"] {
-    border: 1px solid var(--border);
-    transition: border-color 0.2s;
-}
-
-input[type="text"]:focus,
-input[type="date"]:focus {
-    border-color: var(--accent);
-    outline: none;
-}
 
 /* Animations */
 @keyframes fadeIn {
