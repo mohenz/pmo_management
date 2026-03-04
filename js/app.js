@@ -6,7 +6,18 @@ const App = {
         isLoggedIn: false,
         currentUser: null,
         issues: [],
-        stats: null
+        stats: null,
+        listConfig: {
+            page: 1,
+            pageSize: 20,
+            search: {
+                severity: '',
+                status: '',
+                issue_type: '',
+                pmo_assignee: '',
+                title: ''
+            }
+        }
     },
 
     async init() {
@@ -43,7 +54,44 @@ const App = {
         document.querySelectorAll('.nav-item').forEach(item => {
             item.classList.toggle('active', item.dataset.view === view);
         });
+        // Reset list page when navigating
+        if (view === 'list' && this.state.listConfig) {
+            this.state.listConfig.page = 1;
+        }
         await this.render();
+    },
+
+    handleSearchChange() {
+        this.state.listConfig.search.severity = document.getElementById('searchSeverity').value;
+        this.state.listConfig.search.status = document.getElementById('searchStatus').value;
+        this.state.listConfig.search.issue_type = document.getElementById('searchType').value;
+        this.state.listConfig.search.pmo_assignee = document.getElementById('searchAssignee').value;
+        this.state.listConfig.search.title = document.getElementById('searchTitle').value;
+        this.state.listConfig.page = 1;
+        this.render();
+    },
+
+    resetFilters() {
+        this.state.listConfig.search = {
+            severity: '',
+            status: '',
+            issue_type: '',
+            pmo_assignee: '',
+            title: ''
+        };
+        this.state.listConfig.page = 1;
+        this.render();
+    },
+
+    handlePageSizeChange() {
+        this.state.listConfig.pageSize = parseInt(document.getElementById('pageSizeSelect').value);
+        this.state.listConfig.page = 1;
+        this.render();
+    },
+
+    changePage(p) {
+        this.state.listConfig.page = p;
+        this.render();
     },
 
     async render() {
@@ -197,61 +245,143 @@ const App = {
     },
 
     async renderList(container) {
-        const issues = await SupabaseStorage.getIssues();
+        const config = this.state.listConfig;
+        const search = config.search;
+        let issues = await SupabaseStorage.getIssues();
+
+        // Client-side filtering
+        let filtered = issues.filter(i => {
+            const matchesSeverity = !search.severity || i.severity === search.severity;
+            const matchesStatus = !search.status || i.status === search.status;
+            const matchesType = !search.issue_type || i.issue_type === search.issue_type;
+            const matchesAssignee = !search.pmo_assignee || (i.pmo_assignee && i.pmo_assignee.includes(search.pmo_assignee));
+            const matchesTitle = !search.title || i.title.includes(search.title);
+
+            return matchesSeverity && matchesStatus && matchesType && matchesAssignee && matchesTitle;
+        });
+
+        const totalItems = filtered.length;
+        const totalPages = Math.ceil(totalItems / config.pageSize);
+        const startIndex = (config.page - 1) * config.pageSize;
+        const pagedData = filtered.slice(startIndex, startIndex + config.pageSize);
+
         container.innerHTML = `
-            <header class="animate-in" style="display: flex; justify-content: space-between; align-items: center;">
+            <header class="animate-in" style="display: flex; justify-content: space-between; align-items: flex-end;">
                 <div>
-                    <h1>이슈 목록</h1>
-                    <p class="subtitle">모든 이슈의 상세 내역과 조치 현황을 관리합니다.</p>
+                    <h1>이슈 관리 목록</h1>
+                    <p class="subtitle">모든 프로젝트 이슈를 상세하게 조회 및 관리합니다.</p>
                 </div>
-                <button onclick="App.showIssueModal()" class="btn-primary" style="padding: 0.75rem 1.5rem; border-radius: 8px; border: none; background: var(--accent); color: white; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 0.5rem; transition: transform 0.2s;">
-                    <i class="fas fa-plus"></i> 신규 이슈 등록
-                </button>
+                <div style="display: flex; gap: 0.5rem;">
+                    <button class="btn btn-outline" style="color: #4ade80;" onclick="alert('엑셀 다운로드 기능은 오프라인 환경에서 준비 중입니다.')"><i class="fas fa-file-excel"></i> 엑셀 다운로드</button>
+                    <button class="btn btn-primary" onclick="App.showIssueModal()"><i class="fas fa-plus"></i> 신규 이슈 등록</button>
+                </div>
             </header>
 
-            <div class="animate-in table-container glass" style="padding: 1rem; overflow-x: auto; text-align: left;">
-                <table style="min-width: 1500px; border-collapse: collapse; width: 100%;">
+            <!-- Search Filters -->
+            <div class="form-container animate-in" style="margin-bottom: 1.5rem;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; align-items: end;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>이슈 유형</label>
+                        <select id="searchType" onchange="App.handleSearchChange()">
+                            <option value="">전체</option>
+                            <option value="범위" ${search.issue_type === '범위' ? 'selected' : ''}>범위</option>
+                            <option value="기획" ${search.issue_type === '기획' ? 'selected' : ''}>기획</option>
+                            <option value="자원" ${search.issue_type === '자원' ? 'selected' : ''}>자원</option>
+                            <option value="일정" ${search.issue_type === '일정' ? 'selected' : ''}>일정</option>
+                            <option value="기타" ${search.issue_type === '기타' ? 'selected' : ''}>기타</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>심각도</label>
+                        <select id="searchSeverity" onchange="App.handleSearchChange()">
+                            <option value="">전체</option>
+                            <option value="Low" ${search.severity === 'Low' ? 'selected' : ''}>Low</option>
+                            <option value="Medium" ${search.severity === 'Medium' ? 'selected' : ''}>Medium</option>
+                            <option value="High" ${search.severity === 'High' ? 'selected' : ''}>High</option>
+                            <option value="Critical" ${search.severity === 'Critical' ? 'selected' : ''}>Critical</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>현재 상태</label>
+                        <select id="searchStatus" onchange="App.handleSearchChange()">
+                            <option value="">전체</option>
+                            <option value="발생" ${search.status === '발생' ? 'selected' : ''}>발생</option>
+                            <option value="분석중" ${search.status === '분석중' ? 'selected' : ''}>분석중</option>
+                            <option value="조치중" ${search.status === '조치중' ? 'selected' : ''}>조치중</option>
+                            <option value="종결" ${search.status === '종결' ? 'selected' : ''}>종결</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>PMO 담당자</label>
+                        <input type="text" id="searchAssignee" value="${search.pmo_assignee}" oninput="App.handleSearchChange()" placeholder="담당자명 검색">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>이슈 제목</label>
+                        <input type="text" id="searchTitle" value="${search.title}" oninput="App.handleSearchChange()" placeholder="제목 키워드 검색">
+                    </div>
+                    <button class="btn btn-outline" onclick="App.resetFilters()">초기화</button>
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <div style="font-size: 0.875rem; color: var(--text-secondary);">
+                    총 <strong>${totalItems}</strong>건 (${config.page} / ${totalPages || 1} 페이지)
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <label style="margin:0; font-size: 0.8125rem; color: var(--text-secondary);">출력 개수:</label>
+                    <select id="pageSizeSelect" onchange="App.handlePageSizeChange()" style="width: 80px; padding: 0.3rem;">
+                        <option value="20" ${config.pageSize == 20 ? 'selected' : ''}>20</option>
+                        <option value="50" ${config.pageSize == 50 ? 'selected' : ''}>50</option>
+                        <option value="100" ${config.pageSize == 100 ? 'selected' : ''}>100</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="data-table-container animate-in">
+                <table style="min-width: 1500px;">
                     <thead>
                         <tr>
-                            <th style="text-align: left;">ID</th>
-                            <th style="text-align: left;">순번</th>
-                            <th style="text-align: left;">구분</th>
-                            <th style="text-align: left;">유형</th>
-                            <th style="text-align: left;">제목</th>
-                            <th style="text-align: left;">심각도</th>
-                            <th style="text-align: left;">우선순위</th>
-                            <th style="text-align: left;">상태</th>
-                            <th style="text-align: left;">발생일</th>
-                            <th style="text-align: left;">해결기한</th>
-                            <th style="text-align: left;">PMO 담당자</th>
-                            <th style="text-align: left;">유관부서</th>
-                            <th style="text-align: left;">보고라인</th>
-                            <th style="text-align: left;">에스컬레이션</th>
-                            <th style="text-align: left;">등록자</th>
+                            <th>관리 ID</th>
+                            <th>구분</th>
+                            <th>이슈 유형</th>
+                            <th style="min-width: 350px;">이슈 제목</th>
+                            <th>심각도</th>
+                            <th>우선순위</th>
+                            <th>상태</th>
+                            <th>발생일</th>
+                            <th>해결기한</th>
+                            <th>담당자</th>
+                            <th>유관부서</th>
+                            <th>등록자</th>
                         </tr>
                     </thead>
                     <tbody>
-                        ${issues.map(i => `
-                            <tr onclick="App.showDetail(${i.issue_id})" style="cursor: pointer;">
-                                <td style="text-align: left;">${i.display_id}</td>
-                                <td style="text-align: left;">${i.seq || '-'}</td>
-                                <td style="text-align: left;">${i.category}</td>
-                                <td style="text-align: left;">${i.issue_type}</td>
-                                <td style="text-align: left; max-width: 300px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${i.title}</td>
-                                <td style="text-align: left;"><span class="badge badge-${(i.severity || 'low').toLowerCase()}">${i.severity}</span></td>
-                                <td style="text-align: left;">${i.priority || '-'}</td>
-                                <td style="text-align: left;">${i.status}</td>
-                                <td style="text-align: left;">${i.occurrence_date || '-'}</td>
-                                <td style="text-align: left;">${i.target_date || '-'}</td>
-                                <td style="text-align: left;">${i.pmo_assignee || '-'}</td>
-                                <td style="text-align: left;">${i.related_dept || '-'}</td>
-                                <td style="text-align: left;">${i.report_line || '-'}</td>
-                                <td style="text-align: left;">${i.is_escalated ? '○' : '-'}</td>
-                                <td style="text-align: left;">${i.creator || '-'}</td>
+                        ${pagedData.map(i => `
+                            <tr>
+                                <td>${i.display_id}</td>
+                                <td>${i.category || 'PMO'}</td>
+                                <td>${i.issue_type}</td>
+                                <td>
+                                    <strong style="color: var(--accent); cursor: pointer;" onclick="App.showDetail(${i.issue_id})">${i.title}</strong>
+                                </td>
+                                <td><span class="badge badge-${(i.severity || 'low').toLowerCase()}">${i.severity}</span></td>
+                                <td>${i.priority || '-'}</td>
+                                <td>${i.status}</td>
+                                <td>${i.occurrence_date || '-'}</td>
+                                <td>${i.target_date || '-'}</td>
+                                <td>${i.pmo_assignee || '-'}</td>
+                                <td>${i.related_dept || '-'}</td>
+                                <td>${i.creator || '-'}</td>
                             </tr>
-                        `).join('')}
+                        `).join('') || '<tr><td colspan="12" style="text-align: center; padding: 4rem; color: var(--text-secondary);">해당 조건의 이슈가 없습니다.</td></tr>'}
                     </tbody>
                 </table>
+            </div>
+
+            <div style="margin-top: 2rem; display: flex; justify-content: center; gap: 0.5rem;" class="animate-in">
+                <button class="btn btn-outline" onclick="App.changePage(${config.page - 1})" ${config.page === 1 ? 'disabled' : ''}>이전</button>
+                <div style="display: flex; align-items: center; padding: 0 1rem; color: var(--text-primary); font-weight: 600;">${config.page} / ${totalPages || 1}</div>
+                <button class="btn btn-outline" onclick="App.changePage(${config.page + 1})" ${config.page >= totalPages ? 'disabled' : ''}>다음</button>
             </div>
         `;
     },
@@ -267,24 +397,24 @@ const App = {
 
     renderLogin(container) {
         container.innerHTML = `
-            <div style="max-width: 400px; margin: 10vh auto; text-align: center;" class="animate-in">
-                <i class="fas fa-shield-halved" style="font-size: 3rem; color: var(--accent); margin-bottom: 1rem;"></i>
-                <h1 style="font-size: 1.75rem;">PMO 전용 로그인</h1>
-                <p class="subtitle" style="margin-bottom: 2.5rem;">ECLUB 프로젝트 관리 권한이 필요합니다.</p>
-                
-                <form id="loginForm" class="glass" style="padding: 2.5rem; text-align: left;">
-                    <div style="margin-bottom: 1.5rem;">
-                        <label style="display: block; margin-bottom: 0.5rem; font-size: 0.8125rem;">이메일</label>
-                        <input type="email" name="email" required placeholder="admin@eclub.com" style="width: 100%; padding: 0.75rem; background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; color: white;">
-                    </div>
-                    <div style="margin-bottom: 2rem;">
-                        <label style="display: block; margin-bottom: 0.5rem; font-size: 0.8125rem;">비밀번호</label>
-                        <input type="password" name="password" required style="width: 100%; padding: 0.75rem; background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; color: white;">
-                    </div>
-                    <button type="submit" style="width: 100%; background: var(--accent); color: white; border: none; padding: 1rem; border-radius: 8px; font-weight: 700; cursor: pointer; transition: transform 0.2s;">접속 인증</button>
-                    <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 1.5rem; text-align: center;">계정이 없으신가요? 관리자에게 문의하세요.</p>
-                </form>
-            </div>
+        <div style="max-width: 400px; margin: 10vh auto; text-align: center;" class="animate-in">
+            <i class="fas fa-shield-halved" style="font-size: 3rem; color: var(--accent); margin-bottom: 1rem;"></i>
+            <h1 style="font-size: 1.75rem;">PMO 전용 로그인</h1>
+            <p class="subtitle" style="margin-bottom: 2.5rem;">ECLUB 프로젝트 관리 권한이 필요합니다.</p>
+
+            <form id="loginForm" class="glass" style="padding: 2.5rem; text-align: left;">
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; font-size: 0.8125rem;">이메일</label>
+                    <input type="email" name="email" required placeholder="admin@eclub.com" style="width: 100%; padding: 0.75rem; background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; color: white;">
+                </div>
+                <div style="margin-bottom: 2rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; font-size: 0.8125rem;">비밀번호</label>
+                    <input type="password" name="password" required style="width: 100%; padding: 0.75rem; background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; color: white;">
+                </div>
+                <button type="submit" style="width: 100%; background: var(--accent); color: white; border: none; padding: 1rem; border-radius: 8px; font-weight: 700; cursor: pointer; transition: transform 0.2s;">접속 인증</button>
+                <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 1.5rem; text-align: center;">계정이 없으신가요? 관리자에게 문의하세요.</p>
+            </form>
+        </div>
         `;
 
         document.getElementById('loginForm').onsubmit = async (e) => {
@@ -391,8 +521,8 @@ const App = {
                         <button type="button" onclick="App.closeModal()" style="flex: 1; background: var(--bg-main); color: var(--text-primary); border: 1px solid var(--border); padding: 1rem; border-radius: 8px; font-weight: 700; cursor: pointer;">닫기</button>
                     </div>
                 </form>
-            </div>
-        `;
+            </div >
+    `;
 
         document.getElementById('issueModalForm').onsubmit = async (e) => {
             e.preventDefault();
