@@ -344,6 +344,7 @@ const App = {
                     <thead>
                         <tr>
                             <th>관리 ID</th>
+                            <th>순번</th>
                             <th>구분</th>
                             <th>이슈 유형</th>
                             <th style="min-width: 350px;">이슈 제목</th>
@@ -361,6 +362,7 @@ const App = {
                         ${pagedData.map(i => `
                             <tr>
                                 <td>${i.display_id}</td>
+                                <td>${i.seq || '-'}</td>
                                 <td>${i.category || 'PMO'}</td>
                                 <td>${i.issue_type}</td>
                                 <td>
