@@ -402,14 +402,14 @@ const App = {
             <h1 style="font-size: 1.75rem;">PMO 전용 로그인</h1>
             <p class="subtitle" style="margin-bottom: 2.5rem;">ECLUB 프로젝트 관리 권한이 필요합니다.</p>
 
-            <form id="loginForm" class="glass" style="padding: 2.5rem; text-align: left;">
+            <form id="loginForm" class="glass" style="padding: 2.5rem; text-align: left; background: white; border: 1px solid var(--border);">
                 <div style="margin-bottom: 1.5rem;">
                     <label style="display: block; margin-bottom: 0.5rem; font-size: 0.8125rem;">이메일</label>
-                    <input type="email" name="email" required placeholder="admin@eclub.com" style="width: 100%; padding: 0.75rem; background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; color: white;">
+                    <input type="email" name="email" required placeholder="admin@eclub.com" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px;">
                 </div>
                 <div style="margin-bottom: 2rem;">
                     <label style="display: block; margin-bottom: 0.5rem; font-size: 0.8125rem;">비밀번호</label>
-                    <input type="password" name="password" required style="width: 100%; padding: 0.75rem; background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; color: white;">
+                    <input type="password" name="password" required style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px;">
                 </div>
                 <button type="submit" style="width: 100%; background: var(--accent); color: white; border: none; padding: 1rem; border-radius: 8px; font-weight: 700; cursor: pointer; transition: transform 0.2s;">접속 인증</button>
                 <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 1.5rem; text-align: center;">계정이 없으신가요? 관리자에게 문의하세요.</p>
@@ -470,55 +470,55 @@ const App = {
                 <form id="issueModalForm" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem;">
                     <div style="grid-column: span 2;">
                         <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.4rem;">이슈 제목</label>
-                        <input type="text" name="title" required value="${issue.title || ''}" style="width: 100%; padding: 0.75rem; background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; color: white;">
+                        <input type="text" name="title" required value="${issue.title || ''}" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px;">
                     </div>
                     <div>
                         <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.4rem;">이슈 유형</label>
-                        <select name="issue_type" style="width: 100%; padding: 0.75rem; background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; color: white;">
+                        <select name="issue_type" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px;">
                             ${['범위', '기획', '자원', '일정', '기타'].map(t => `<option value="${t}" ${issue.issue_type === t ? 'selected' : ''}>${t}</option>`).join('')}
                         </select>
                     </div>
                     <div>
                         <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.4rem;">심각도</label>
-                        <select name="severity" style="width: 100%; padding: 0.75rem; background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; color: white;">
+                        <select name="severity" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px;">
                             ${['Low', 'Medium', 'High', 'Critical'].map(s => `<option value="${s}" ${issue.severity === s ? 'selected' : ''}>${s}</option>`).join('')}
                         </select>
                     </div>
                     <div>
                         <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.4rem;">현재 상태</label>
-                        <select name="status" style="width: 100%; padding: 0.75rem; background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; color: white;">
+                        <select name="status" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px;">
                             ${['발생', '분석중', '조치중', '종결'].map(s => `<option value="${s}" ${issue.status === s ? 'selected' : ''}>${s}</option>`).join('')}
                         </select>
                     </div>
                     <div>
                         <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.4rem;">PMO 담당자</label>
-                        <input type="text" name="pmo_assignee" value="${issue.pmo_assignee || ''}" style="width: 100%; padding: 0.75rem; background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; color: white;">
+                        <input type="text" name="pmo_assignee" value="${issue.pmo_assignee || ''}" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px;">
                     </div>
                     <div>
                         <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.4rem;">해결기한</label>
-                        <input type="date" name="target_date" value="${issue.target_date || ''}" style="width: 100%; padding: 0.75rem; background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; color: white; color-scheme: dark;">
+                        <input type="date" name="target_date" value="${issue.target_date || ''}" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px;">
                     </div>
                     <div>
                         <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.4rem;">보고라인</label>
-                        <input type="text" name="report_line" value="${issue.report_line || ''}" placeholder="예시: 실무진, 경영진 등" style="width: 100%; padding: 0.75rem; background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; color: white;">
+                        <input type="text" name="report_line" value="${issue.report_line || ''}" placeholder="예시: 실무진, 경영진 등" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px;">
                     </div>
 
                     <div style="grid-column: span 2; margin-top: 0.5rem;">
                         <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.4rem;">상세 내용 및 원인</label>
-                        <textarea name="description" rows="4" style="width: 100%; padding: 0.75rem; background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; color: white; resize: vertical;">${issue.description || ''}</textarea>
+                        <textarea name="description" rows="4" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px; resize: vertical;">${issue.description || ''}</textarea>
                     </div>
 
                     <div style="grid-column: span 2; margin-top: 0.5rem;">
                         <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.4rem;">내부 대응 전략 및 조치 계획</label>
-                        <textarea name="action_plan" rows="4" style="width: 100%; padding: 0.75rem; background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; color: white; resize: vertical;">${issue.action_plan || ''}</textarea>
+                        <textarea name="action_plan" rows="4" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px; resize: vertical;">${issue.action_plan || ''}</textarea>
                     </div>
 
                     <div style="grid-column: span 2; margin-top: 2rem; display: flex; gap: 1rem;">
                         ${id ? `
-                            <button type="button" onclick="App.handleDelete(${id})" style="background: rgba(248, 81, 71, 0.1); color: #f85149; border: 1px solid rgba(248, 81, 71, 0.2); padding: 1rem 1.5rem; border-radius: 8px; font-weight: 700; cursor: pointer;">이슈 삭제</button>
+                            <button type="button" onclick="App.handleDelete(${id})" style="background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.2); padding: 1rem 1.5rem; border-radius: 8px; font-weight: 700; cursor: pointer;">이슈 삭제</button>
                         ` : ''}
                         <button type="submit" style="flex: 1; background: var(--accent); color: white; border: none; padding: 1rem; border-radius: 8px; font-weight: 700; cursor: pointer;">정보 저장</button>
-                        <button type="button" onclick="App.closeModal()" style="flex: 1; background: var(--bg-main); color: var(--text-primary); border: 1px solid var(--border); padding: 1rem; border-radius: 8px; font-weight: 700; cursor: pointer;">닫기</button>
+                        <button type="button" onclick="App.closeModal()" style="flex: 1; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border); padding: 1rem; border-radius: 8px; font-weight: 700; cursor: pointer;">닫기</button>
                     </div>
                 </form>
             </div >
