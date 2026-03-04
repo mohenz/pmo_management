@@ -199,9 +199,14 @@ const App = {
     async renderList(container) {
         const issues = await SupabaseStorage.getIssues();
         container.innerHTML = `
-            <header class="animate-in">
-                <h1>이슈 목록</h1>
-                <p class="subtitle">모든 이슈의 상세 내역과 조치 현황을 관리합니다.</p>
+            <header class="animate-in" style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h1>이슈 목록</h1>
+                    <p class="subtitle">모든 이슈의 상세 내역과 조치 현황을 관리합니다.</p>
+                </div>
+                <button onclick="App.showIssueModal()" class="btn-primary" style="padding: 0.75rem 1.5rem; border-radius: 8px; border: none; background: var(--accent); color: white; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 0.5rem; transition: transform 0.2s;">
+                    <i class="fas fa-plus"></i> 신규 이슈 등록
+                </button>
             </header>
 
             <div class="animate-in table-container glass" style="padding: 1rem; overflow-x: auto; text-align: left;">
@@ -252,64 +257,12 @@ const App = {
     },
 
     renderRegister(container) {
-        container.innerHTML = `
-            <header class="animate-in">
-                <h1>이슈 등록</h1>
-                <p class="subtitle">새로운 리스크 또는 이슈 사항을 기록합니다. PMO 내부 전용입니다.</p>
-            </header>
-
-            <form id="issueForm" class="glass animate-in" style="padding: 2rem;">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
-                    <div>
-                        <label style="display: block; margin-bottom: 0.5rem; font-size: 0.875rem;">이슈 제목</label>
-                        <input type="text" name="title" required style="width: 100%; padding: 0.75rem; background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; color: white;">
-                    </div>
-                    <div>
-                        <label style="display: block; margin-bottom: 0.5rem; font-size: 0.875rem;">이슈 유형</label>
-                        <select name="issue_type" style="width: 100%; padding: 0.75rem; background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; color: white;">
-                            <option value="범위">범위</option>
-                            <option value="기획">기획</option>
-                            <option value="자원">자원</option>
-                            <option value="일정">일정</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label style="display: block; margin-bottom: 0.5rem; font-size: 0.875rem;">심각도</label>
-                        <select name="severity" style="width: 100%; padding: 0.75rem; background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; color: white;">
-                            <option value="Low">Low</option>
-                            <option value="Medium">Medium</option>
-                            <option value="High">High</option>
-                            <option value="Critical">Critical</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label style="display: block; margin-bottom: 0.5rem; font-size: 0.875rem;">PMO 담당자</label>
-                        <input type="text" name="pmo_assignee" style="width: 100%; padding: 0.75rem; background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; color: white;">
-                    </div>
-                </div>
-                <div style="margin-top: 1.5rem;">
-                    <label style="display: block; margin-bottom: 0.5rem; font-size: 0.875rem;">상세 내용</label>
-                    <textarea name="description" rows="5" style="width: 100%; padding: 0.75rem; background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; color: white; resize: vertical;"></textarea>
-                </div>
-                <button type="submit" class="animate-in" style="margin-top: 2rem; background: var(--accent); color: white; border: none; padding: 1rem 2rem; border-radius: 8px; font-weight: 700; cursor: pointer; width: 100%;">이슈 등록하기</button>
-            </form>
-        `;
-
-        document.getElementById('issueForm').onsubmit = async (e) => {
-            e.preventDefault();
-            const formData = new FormData(e.target);
-            const data = Object.fromEntries(formData.entries());
-            data.display_id = 'ISU-' + String(Date.now()).slice(-4);
-            data.creator = this.state.currentUser.name;
-
-            try {
-                await SupabaseStorage.saveIssue(data);
-                alert('이슈가 성공적으로 등록 되었습니다.');
-                this.navigate('list');
-            } catch (err) {
-                alert('등록 중 오류가 발생했습니다: ' + err.message);
-            }
-        };
+        this.showIssueModal();
+        container.innerHTML = `<div style="text-align: center; padding: 5rem;">
+            <h2>이슈 등록 모달이 열려 있습니다.</h2>
+            <p class="subtitle">목록 화면에서 신규 등록 버튼을 이용하셔도 됩니다.</p>
+            <button onclick="App.navigate('list')" class="btn" style="margin-top: 1rem; color: var(--accent);">이슈 목록으로 돌아가기</button>
+        </div>`;
     },
 
     renderLogin(container) {
@@ -370,68 +323,116 @@ const App = {
     },
 
     async showDetail(id) {
-        const issue = await SupabaseStorage.getIssueById(id);
+        this.showIssueModal(id);
+    },
+
+    async showIssueModal(id = null) {
         const modalOverlay = document.getElementById('modalOverlay');
         const modalBody = document.getElementById('modalBody');
+        let issue = id ? await SupabaseStorage.getIssueById(id) : {};
 
         modalBody.innerHTML = `
             <div class="animate-in">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem;">
-                    <div>
-                        <span class="badge badge-${(issue.severity || 'low').toLowerCase()}" style="margin-bottom: 0.5rem; display: inline-block;">${issue.severity}</span>
-                        <h2 style="font-size: 1.5rem; color: white;">[${issue.display_id}] ${issue.title}</h2>
-                    </div>
-                    <div style="text-align: right;">
-                        <div style="font-size: 0.8rem; color: var(--text-secondary);">현재 상태</div>
-                        <div style="font-weight: 700; color: var(--accent);">${issue.status}</div>
-                    </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                    <h2><i class="fas ${id ? 'fa-edit' : 'fa-plus-circle'}"></i> ${id ? '이슈 정보 및 수정' : '신규 이슈 등록'}</h2>
+                    ${id ? `
+                        <button onclick="App.handleDelete(${id})" style="background: rgba(248, 81, 71, 0.1); color: #f85149; border: 1px solid rgba(248, 81, 71, 0.2); padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer;">
+                            <i class="fas fa-trash"></i> 삭제
+                        </button>
+                    ` : ''}
                 </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.5rem; margin-bottom: 2.5rem; padding: 1.5rem; background: rgba(255,255,255,0.03); border-radius: 8px;">
-                    <div>
-                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem;">이슈 유형</div>
-                        <div style="color: white; font-weight: 600;">${issue.issue_type}</div>
+                <form id="issueModalForm" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem;">
+                    <div style="grid-column: span 2;">
+                        <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.4rem;">이슈 제목</label>
+                        <input type="text" name="title" required value="${issue.title || ''}" style="width: 100%; padding: 0.75rem; background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; color: white;">
                     </div>
                     <div>
-                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem;">우선순위</div>
-                        <div style="color: white; font-weight: 600;">${issue.priority || '-'}</div>
+                        <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.4rem;">이슈 유형</label>
+                        <select name="issue_type" style="width: 100%; padding: 0.75rem; background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; color: white;">
+                            ${['범위', '기획', '자원', '일정', '기타'].map(t => `<option value="${t}" ${issue.issue_type === t ? 'selected' : ''}>${t}</option>`).join('')}
+                        </select>
                     </div>
                     <div>
-                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem;">PMO 담당자</div>
-                        <div style="color: white; font-weight: 600;">${issue.pmo_assignee || '-'}</div>
+                        <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.4rem;">심각도</label>
+                        <select name="severity" style="width: 100%; padding: 0.75rem; background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; color: white;">
+                            ${['Low', 'Medium', 'High', 'Critical'].map(s => `<option value="${s}" ${issue.severity === s ? 'selected' : ''}>${s}</option>`).join('')}
+                        </select>
                     </div>
                     <div>
-                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem;">발생일</div>
-                        <div style="color: white; font-weight: 600;">${issue.occurrence_date || '-'}</div>
+                        <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.4rem;">현재 상태</label>
+                        <select name="status" style="width: 100%; padding: 0.75rem; background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; color: white;">
+                            ${['발생', '분석중', '조치중', '종결'].map(s => `<option value="${s}" ${issue.status === s ? 'selected' : ''}>${s}</option>`).join('')}
+                        </select>
                     </div>
                     <div>
-                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem;">해결기한</div>
-                        <div style="color: white; font-weight: 600;">${issue.target_date || '-'}</div>
+                        <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.4rem;">PMO 담당자</label>
+                        <input type="text" name="pmo_assignee" value="${issue.pmo_assignee || ''}" style="width: 100%; padding: 0.75rem; background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; color: white;">
                     </div>
                     <div>
-                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem;">보고라인</div>
-                        <div style="color: white; font-weight: 600;">${issue.report_line || '-'}</div>
+                        <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.4rem;">해결기한</label>
+                        <input type="date" name="target_date" value="${issue.target_date || ''}" style="width: 100%; padding: 0.75rem; background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; color: white; color-scheme: dark;">
                     </div>
-                </div>
+                    <div>
+                        <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.4rem;">보고라인</label>
+                        <input type="text" name="report_line" value="${issue.report_line || ''}" placeholder="예시: 실무진, 경영진 등" style="width: 100%; padding: 0.75rem; background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; color: white;">
+                    </div>
 
-                <div style="margin-bottom: 2rem;">
-                    <h4 style="color: var(--accent); margin-bottom: 0.75rem;"><i class="fas fa-align-left"></i> 상세 내용 및 원인</h4>
-                    <div style="background: var(--bg-main); padding: 1.25rem; border-radius: 8px; border: 1px solid var(--border); white-space: pre-wrap; font-size: 0.95rem;">${issue.description || '내용이 없습니다.'}</div>
-                </div>
+                    <div style="grid-column: span 2; margin-top: 0.5rem;">
+                        <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.4rem;">상세 내용 및 원인</label>
+                        <textarea name="description" rows="4" style="width: 100%; padding: 0.75rem; background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; color: white; resize: vertical;">${issue.description || ''}</textarea>
+                    </div>
 
-                <div style="margin-bottom: 2rem;">
-                    <h4 style="color: var(--warning); margin-bottom: 0.75rem;"><i class="fas fa-bolt"></i> 내부 대응 전략 및 조치 계획</h4>
-                    <div style="background: var(--bg-main); padding: 1.25rem; border-radius: 8px; border: 1px solid var(--border); white-space: pre-wrap; font-size: 0.95rem;">${issue.action_plan || '계획이 수립되지 않았습니다.'}</div>
-                </div>
+                    <div style="grid-column: span 2; margin-top: 0.5rem;">
+                        <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.4rem;">내부 대응 전략 및 조치 계획</label>
+                        <textarea name="action_plan" rows="4" style="width: 100%; padding: 0.75rem; background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; color: white; resize: vertical;">${issue.action_plan || ''}</textarea>
+                    </div>
 
-                <div style="font-size: 0.75rem; color: var(--text-secondary); text-align: right; border-top: 1px solid var(--border); padding-top: 1rem;">
-                    등록자: ${issue.creator || '관리자'} | 등록일시: ${new Date(issue.created_at).toLocaleString()}
-                </div>
+                    <div style="grid-column: span 2; margin-top: 2rem; display: flex; gap: 1rem;">
+                        <button type="submit" style="flex: 1; background: var(--accent); color: white; border: none; padding: 1rem; border-radius: 8px; font-weight: 700; cursor: pointer;">저장하기</button>
+                        <button type="button" onclick="App.closeModal()" style="flex: 1; background: var(--bg-main); color: var(--text-primary); border: 1px solid var(--border); padding: 1rem; border-radius: 8px; font-weight: 700; cursor: pointer;">취소</button>
+                    </div>
+                </form>
             </div>
         `;
 
+        document.getElementById('issueModalForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData.entries());
+
+            if (id) {
+                data.issue_id = id;
+            } else {
+                data.display_id = 'ISU-' + String(Date.now()).slice(-4);
+                data.creator = this.state.currentUser.name;
+                data.occurrence_date = new Date().toISOString().split('T')[0];
+            }
+
+            try {
+                await SupabaseStorage.saveIssue(data);
+                alert(id ? '수정되었습니다.' : '등록되었습니다.');
+                this.closeModal();
+                this.render(); // Refresh current view
+            } catch (err) {
+                alert('처리 중 오류 발생: ' + err.message);
+            }
+        };
+
         modalOverlay.style.display = 'flex';
         document.body.style.overflow = 'hidden';
+    },
+    async handleDelete(id) {
+        if (confirm('정말로 이 이슈를 삭제하시겠습니까?')) {
+            try {
+                await SupabaseStorage.deleteIssue(id);
+                alert('삭제되었습니다.');
+                this.closeModal();
+                this.render();
+            } catch (err) {
+                alert('삭제 실패: ' + err.message);
+            }
+        }
     },
 
     closeModal() {
