@@ -464,6 +464,7 @@ const App = {
         const modalOverlay = document.getElementById('modalOverlay');
         const modalBody = document.getElementById('modalBody');
         let issue = id ? await SupabaseStorage.getIssueById(id) : {};
+        const uniqueIds = await SupabaseStorage.getUniqueDisplayIds();
 
         modalBody.innerHTML = `
             <div class="animate-in">
@@ -472,6 +473,30 @@ const App = {
                 </div>
 
                 <form id="issueModalForm" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem;">
+                    <div style="grid-column: span 2; display: flex; gap: 1rem; align-items: flex-end;">
+                        <div style="flex: 2;">
+                            <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.4rem;">이슈 관리 ID ( display_id )</label>
+                            ${id ? `
+                                <input type="text" name="display_id" value="${issue.display_id}" readonly style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-secondary);">
+                            ` : `
+                                <div style="display: flex; gap: 0.5rem;">
+                                    <select id="displayIdType" style="flex: 1; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px;" onchange="App.toggleDisplayIdType(this.value)">
+                                        <option value="NEW">신규 발급</option>
+                                        <option value="EXISTING">기존 ID 선택</option>
+                                    </select>
+                                    <select id="existingDisplayId" name="display_id" style="flex: 2; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px; display: none;">
+                                        <option value="">관리 ID 선택...</option>
+                                        ${uniqueIds.map(uid => `<option value="${uid}">${uid}</option>`).join('')}
+                                    </select>
+                                    <input type="text" id="newDisplayId" name="display_id_new" placeholder="자동 생성 (또는 입력)" style="flex: 2; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px;">
+                                </div>
+                            `}
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.4rem;">시퀀스(seq)</label>
+                            <input type="number" name="seq" value="${issue.seq || 0}" readonly style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-secondary);">
+                        </div>
+                    </div>
                     <div style="grid-column: span 2;">
                         <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.4rem;">이슈 제목</label>
                         <input type="text" name="title" required value="${issue.title || ''}" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px;">
@@ -490,7 +515,7 @@ const App = {
                     </div>
                     <div>
                         <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.4rem;">현재 상태</label>
-                        <select name="status" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px;">
+                        <select name="status" id="issueStatus" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px;">
                             ${['발생', '분석중', '조치중', '종결'].map(s => `<option value="${s}" ${issue.status === s ? 'selected' : ''}>${s}</option>`).join('')}
                         </select>
                     </div>
@@ -528,17 +553,87 @@ const App = {
             </div >
     `;
 
+        if (!id) {
+            document.getElementById('existingDisplayId').onchange = async (e) => {
+                const val = e.target.value;
+                if (val) {
+                    const latest = await SupabaseStorage.getLatestIssueByDisplayId(val);
+                    if (latest) {
+                        const seqInput = document.querySelector('input[name="seq"]');
+                        if (seqInput) seqInput.value = (latest.seq || 0) + 1;
+
+                        const statusSelect = document.getElementById('issueStatus');
+                        if (statusSelect) {
+                            if (latest.status === '발생') {
+                                statusSelect.value = '분석중'; // Default move to progress
+                            } else if (['분석중', '조치중'].includes(latest.status)) {
+                                statusSelect.value = '분석중'; // Stay in progress
+                            }
+                        }
+                    }
+                }
+            };
+        }
+
         document.getElementById('issueModalForm').onsubmit = async (e) => {
             e.preventDefault();
             const formData = new FormData(e.target);
             const data = Object.fromEntries(formData.entries());
 
             if (id) {
+                // Editing existing specific record - usually not increasing seq
                 data.issue_id = id;
             } else {
-                data.display_id = 'ISU-' + String(Date.now()).slice(-4);
+                // New Registration Logic with Lifecycle Rules
+                let finalDisplayId = '';
+                const type = document.getElementById('displayIdType').value;
+                if (type === 'NEW') {
+                    finalDisplayId = data.display_id_new || ('ISU-' + String(Date.now()).slice(-4));
+                    data.seq = 0; // First sequence
+                    if (data.status !== '발생') {
+                        alert('신규 이슈 관리 ID 등록 시 초기 상태는 [발생]이어야 합니다.');
+                        return;
+                    }
+                } else {
+                    finalDisplayId = data.display_id;
+                    if (!finalDisplayId) {
+                        alert('관리 ID를 선택해 주세요.');
+                        return;
+                    }
+
+                    // Fetch latest state for this displayId
+                    const latest = await SupabaseStorage.getLatestIssueByDisplayId(finalDisplayId);
+                    if (latest) {
+                        if (latest.status === '종결') {
+                            alert('해당 이슈는 이미 [종결] 상태입니다. 신규 이슈를 등록할 수 없습니다.');
+                            return;
+                        }
+
+                        if (latest.status === '발생') {
+                            if (!['분석중', '조치중'].includes(data.status)) {
+                                alert('이전 이슈가 [발생] 상태인 경우, 신규 등록 시 상태는 [진행(분석중/조치중)]이어야 합니다.');
+                                return;
+                            }
+                        } else if (['분석중', '조치중'].includes(latest.status)) {
+                            if (!['분석중', '조치중', '종결'].includes(data.status)) {
+                                alert('이전 이슈가 [진행] 상태인 경우, 신규 등록 시 상태는 [진행] 또는 [종결]이어야 합니다.');
+                                return;
+                            }
+                        }
+
+                        data.seq = (latest.seq || 0) + 1;
+                        // Inherit some fields from latest if not filled?
+                        data.category = latest.category;
+                        data.issue_type = latest.issue_type;
+                    } else {
+                        data.seq = 0;
+                    }
+                }
+
+                data.display_id = finalDisplayId;
                 data.creator = this.state.currentUser.name;
                 data.occurrence_date = new Date().toISOString().split('T')[0];
+                delete data.display_id_new;
             }
 
             try {
@@ -570,6 +665,18 @@ const App = {
     closeModal() {
         document.getElementById('modalOverlay').style.display = 'none';
         document.body.style.overflow = 'auto';
+    },
+
+    toggleDisplayIdType(val) {
+        const existing = document.getElementById('existingDisplayId');
+        const next = document.getElementById('newDisplayId');
+        if (val === 'EXISTING') {
+            existing.style.display = 'block';
+            next.style.display = 'none';
+        } else {
+            existing.style.display = 'none';
+            next.style.display = 'block';
+        }
     }
 };
 

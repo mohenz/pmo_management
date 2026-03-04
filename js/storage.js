@@ -55,6 +55,29 @@ const SupabaseStorage = {
         return data;
     },
 
+    async getLatestIssueByDisplayId(displayId) {
+        const { data, error } = await this.client
+            .from('issues')
+            .select('*')
+            .eq('display_id', displayId)
+            .eq('is_deleted', 'N')
+            .order('seq', { ascending: false })
+            .limit(1);
+
+        if (error) throw error;
+        return data[0] || null;
+    },
+
+    async getUniqueDisplayIds() {
+        const { data, error } = await this.client
+            .from('issues')
+            .select('display_id')
+            .eq('is_deleted', 'N');
+
+        if (error) throw error;
+        return [...new Set(data.map(item => item.display_id))];
+    },
+
     async saveIssue(issueData) {
         const isUpdate = !!issueData.issue_id;
         const now = new Date().toISOString();
