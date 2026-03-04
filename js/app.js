@@ -335,11 +335,6 @@ const App = {
             <div class="animate-in">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
                     <h2><i class="fas ${id ? 'fa-edit' : 'fa-plus-circle'}"></i> ${id ? '이슈 정보 및 수정' : '신규 이슈 등록'}</h2>
-                    ${id ? `
-                        <button onclick="App.handleDelete(${id})" style="background: rgba(248, 81, 71, 0.1); color: #f85149; border: 1px solid rgba(248, 81, 71, 0.2); padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer;">
-                            <i class="fas fa-trash"></i> 삭제
-                        </button>
-                    ` : ''}
                 </div>
 
                 <form id="issueModalForm" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem;">
@@ -389,8 +384,11 @@ const App = {
                     </div>
 
                     <div style="grid-column: span 2; margin-top: 2rem; display: flex; gap: 1rem;">
-                        <button type="submit" style="flex: 1; background: var(--accent); color: white; border: none; padding: 1rem; border-radius: 8px; font-weight: 700; cursor: pointer;">저장하기</button>
-                        <button type="button" onclick="App.closeModal()" style="flex: 1; background: var(--bg-main); color: var(--text-primary); border: 1px solid var(--border); padding: 1rem; border-radius: 8px; font-weight: 700; cursor: pointer;">취소</button>
+                        ${id ? `
+                            <button type="button" onclick="App.handleDelete(${id})" style="background: rgba(248, 81, 71, 0.1); color: #f85149; border: 1px solid rgba(248, 81, 71, 0.2); padding: 1rem 1.5rem; border-radius: 8px; font-weight: 700; cursor: pointer;">이슈 삭제</button>
+                        ` : ''}
+                        <button type="submit" style="flex: 1; background: var(--accent); color: white; border: none; padding: 1rem; border-radius: 8px; font-weight: 700; cursor: pointer;">정보 저장</button>
+                        <button type="button" onclick="App.closeModal()" style="flex: 1; background: var(--bg-main); color: var(--text-primary); border: 1px solid var(--border); padding: 1rem; border-radius: 8px; font-weight: 700; cursor: pointer;">닫기</button>
                     </div>
                 </form>
             </div>
