@@ -204,45 +204,45 @@ const App = {
                 <p class="subtitle">모든 이슈의 상세 내역과 조치 현황을 관리합니다.</p>
             </header>
 
-            <div class="animate-in table-container glass" style="padding: 1rem; overflow-x: auto;">
-                <table style="min-width: 1500px;">
+            <div class="animate-in table-container glass" style="padding: 1rem; overflow-x: auto; text-align: left;">
+                <table style="min-width: 1500px; border-collapse: collapse; width: 100%;">
                     <thead>
                         <tr>
-                            <th>ID</th>
-                            <th>순번</th>
-                            <th>구분</th>
-                            <th>유형</th>
-                            <th>제목</th>
-                            <th>심각도</th>
-                            <th>우선순위</th>
-                            <th>상태</th>
-                            <th>발생일</th>
-                            <th>해결기한</th>
-                            <th>PMO 담당자</th>
-                            <th>유관부서</th>
-                            <th>보고라인</th>
-                            <th>에스컬레이션</th>
-                            <th>등록자</th>
+                            <th style="text-align: left;">ID</th>
+                            <th style="text-align: left;">순번</th>
+                            <th style="text-align: left;">구분</th>
+                            <th style="text-align: left;">유형</th>
+                            <th style="text-align: left;">제목</th>
+                            <th style="text-align: left;">심각도</th>
+                            <th style="text-align: left;">우선순위</th>
+                            <th style="text-align: left;">상태</th>
+                            <th style="text-align: left;">발생일</th>
+                            <th style="text-align: left;">해결기한</th>
+                            <th style="text-align: left;">PMO 담당자</th>
+                            <th style="text-align: left;">유관부서</th>
+                            <th style="text-align: left;">보고라인</th>
+                            <th style="text-align: left;">에스컬레이션</th>
+                            <th style="text-align: left;">등록자</th>
                         </tr>
                     </thead>
                     <tbody>
                         ${issues.map(i => `
                             <tr onclick="App.showDetail(${i.issue_id})" style="cursor: pointer;">
-                                <td>${i.display_id}</td>
-                                <td>${i.seq || '-'}</td>
-                                <td>${i.category}</td>
-                                <td>${i.issue_type}</td>
-                                <td style="max-width: 300px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${i.title}</td>
-                                <td><span class="badge badge-${(i.severity || 'low').toLowerCase()}">${i.severity}</span></td>
-                                <td>${i.priority || '-'}</td>
-                                <td>${i.status}</td>
-                                <td>${i.occurrence_date || '-'}</td>
-                                <td>${i.target_date || '-'}</td>
-                                <td>${i.pmo_assignee || '-'}</td>
-                                <td>${i.related_dept || '-'}</td>
-                                <td>${i.report_line || '-'}</td>
-                                <td>${i.is_escalated ? '○' : '-'}</td>
-                                <td>${i.creator || '-'}</td>
+                                <td style="text-align: left;">${i.display_id}</td>
+                                <td style="text-align: left;">${i.seq || '-'}</td>
+                                <td style="text-align: left;">${i.category}</td>
+                                <td style="text-align: left;">${i.issue_type}</td>
+                                <td style="text-align: left; max-width: 300px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${i.title}</td>
+                                <td style="text-align: left;"><span class="badge badge-${(i.severity || 'low').toLowerCase()}">${i.severity}</span></td>
+                                <td style="text-align: left;">${i.priority || '-'}</td>
+                                <td style="text-align: left;">${i.status}</td>
+                                <td style="text-align: left;">${i.occurrence_date || '-'}</td>
+                                <td style="text-align: left;">${i.target_date || '-'}</td>
+                                <td style="text-align: left;">${i.pmo_assignee || '-'}</td>
+                                <td style="text-align: left;">${i.related_dept || '-'}</td>
+                                <td style="text-align: left;">${i.report_line || '-'}</td>
+                                <td style="text-align: left;">${i.is_escalated ? '○' : '-'}</td>
+                                <td style="text-align: left;">${i.creator || '-'}</td>
                             </tr>
                         `).join('')}
                     </tbody>
@@ -367,6 +367,71 @@ const App = {
         sessionStorage.removeItem('pmo_user');
         this.state.isLoggedIn = false;
         location.reload();
+    },
+
+    async showDetail(id) {
+        const issue = await SupabaseStorage.getIssueById(id);
+        const modalOverlay = document.getElementById('modalOverlay');
+        const modalBody = document.getElementById('modalBody');
+
+        modalBody.innerHTML = `
+            <div class="animate-in">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem;">
+                    <div>
+                        <span class="badge badge-${(issue.severity || 'low').toLowerCase()}" style="margin-bottom: 0.5rem; display: inline-block;">${issue.severity}</span>
+                        <h2 style="font-size: 1.5rem; color: white;">[${issue.display_id}] ${issue.title}</h2>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 0.8rem; color: var(--text-secondary);">현재 상태</div>
+                        <div style="font-weight: 700; color: var(--accent);">${issue.status}</div>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.5rem; margin-bottom: 2.5rem; padding: 1.5rem; background: rgba(255,255,255,0.03); border-radius: 8px;">
+                    <div>
+                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem;">이슈 유형</div>
+                        <div style="color: white; font-weight: 600;">${issue.issue_type}</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem;">우선순위</div>
+                        <div style="color: white; font-weight: 600;">${issue.priority || '-'}</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem;">PMO 담당자</div>
+                        <div style="color: white; font-weight: 600;">${issue.pmo_assignee || '-'}</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem;">발생일</div>
+                        <div style="color: white; font-weight: 600;">${issue.occurrence_date || '-'}</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem;">해결기한</div>
+                        <div style="color: white; font-weight: 600;">${issue.target_date || '-'}</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem;">보고라인</div>
+                        <div style="color: white; font-weight: 600;">${issue.report_line || '-'}</div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 2rem;">
+                    <h4 style="color: var(--accent); margin-bottom: 0.75rem;"><i class="fas fa-align-left"></i> 상세 내용 및 원인</h4>
+                    <div style="background: var(--bg-main); padding: 1.25rem; border-radius: 8px; border: 1px solid var(--border); white-space: pre-wrap; font-size: 0.95rem;">${issue.description || '내용이 없습니다.'}</div>
+                </div>
+
+                <div style="margin-bottom: 2rem;">
+                    <h4 style="color: var(--warning); margin-bottom: 0.75rem;"><i class="fas fa-bolt"></i> 내부 대응 전략 및 조치 계획</h4>
+                    <div style="background: var(--bg-main); padding: 1.25rem; border-radius: 8px; border: 1px solid var(--border); white-space: pre-wrap; font-size: 0.95rem;">${issue.action_plan || '계획이 수립되지 않았습니다.'}</div>
+                </div>
+
+                <div style="font-size: 0.75rem; color: var(--text-secondary); text-align: right; border-top: 1px solid var(--border); padding-top: 1rem;">
+                    등록자: ${issue.creator || '관리자'} | 등록일시: ${new Date(issue.created_at).toLocaleString()}
+                </div>
+            </div>
+        `;
+
+        modalOverlay.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
     },
 
     closeModal() {
