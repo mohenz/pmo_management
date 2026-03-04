@@ -106,7 +106,7 @@ const App = {
 
             <div class="animate-in" style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 2rem;">
                 <div class="glass" style="padding: 1.5rem;">
-                    <h3><i class="fas fa-pie-chart"></i> 이슈 유형 분포</h3>
+                    <h3><i class="fas fa-chart-bar"></i> 이슈 유형 분포</h3>
                     <canvas id="typeChart" style="max-height: 250px;"></canvas>
                 </div>
                 <div class="glass" style="padding: 1.5rem;">
@@ -148,18 +148,27 @@ const App = {
     renderCharts(stats) {
         const typeCtx = document.getElementById('typeChart').getContext('2d');
         new Chart(typeCtx, {
-            type: 'doughnut',
+            type: 'bar',
             data: {
                 labels: Object.keys(stats.type),
                 datasets: [{
+                    label: '유형별 건수',
                     data: Object.values(stats.type),
-                    backgroundColor: ['#58a6ff', '#238636', '#d29922', '#f85149'],
-                    borderWidth: 0
+                    backgroundColor: '#58a6ff66',
+                    borderColor: '#58a6ff',
+                    borderWidth: 1
                 }]
             },
             options: {
+                indexAxis: 'y',
                 responsive: true,
-                plugins: { legend: { position: 'right', labels: { color: '#c9d1d9' } } }
+                scales: {
+                    x: { ticks: { color: '#8b949e' }, grid: { color: '#30363d' } },
+                    y: { ticks: { color: '#8b949e' }, grid: { display: false } }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
             }
         });
 
