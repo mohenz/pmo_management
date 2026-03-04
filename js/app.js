@@ -116,7 +116,7 @@ const App = {
             </div>
 
             <div class="animate-in" style="margin-top: 3rem;">
-                <h2>최근 등록 이슈 (TOP 5)</h2>
+                <h2>최근 등록 이슈 (미종결 건 TOP 5)</h2>
                 <table>
                     <thead>
                         <tr>
@@ -128,7 +128,7 @@ const App = {
                         </tr>
                     </thead>
                     <tbody>
-                        ${issues.slice(0, 5).map(i => `
+                        ${issues.filter(i => i.status !== '종결').slice(0, 5).map(i => `
                             <tr>
                                 <td>${i.display_id}</td>
                                 <td>${i.title}</td>
@@ -204,27 +204,45 @@ const App = {
                 <p class="subtitle">모든 이슈의 상세 내역과 조치 현황을 관리합니다.</p>
             </header>
 
-            <div class="animate-in">
-                <table>
+            <div class="animate-in table-container glass" style="padding: 1rem; overflow-x: auto;">
+                <table style="min-width: 1500px;">
                     <thead>
                         <tr>
                             <th>ID</th>
-                            <th>제목</th>
+                            <th>순번</th>
+                            <th>구분</th>
                             <th>유형</th>
+                            <th>제목</th>
                             <th>심각도</th>
+                            <th>우선순위</th>
                             <th>상태</th>
+                            <th>발생일</th>
+                            <th>해결기한</th>
                             <th>PMO 담당자</th>
+                            <th>유관부서</th>
+                            <th>보고라인</th>
+                            <th>에스컬레이션</th>
+                            <th>등록자</th>
                         </tr>
                     </thead>
                     <tbody>
                         ${issues.map(i => `
                             <tr onclick="App.showDetail(${i.issue_id})" style="cursor: pointer;">
                                 <td>${i.display_id}</td>
-                                <td>${i.title}</td>
+                                <td>${i.seq || '-'}</td>
+                                <td>${i.category}</td>
                                 <td>${i.issue_type}</td>
+                                <td style="max-width: 300px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${i.title}</td>
                                 <td><span class="badge badge-${(i.severity || 'low').toLowerCase()}">${i.severity}</span></td>
+                                <td>${i.priority || '-'}</td>
                                 <td>${i.status}</td>
+                                <td>${i.occurrence_date || '-'}</td>
+                                <td>${i.target_date || '-'}</td>
                                 <td>${i.pmo_assignee || '-'}</td>
+                                <td>${i.related_dept || '-'}</td>
+                                <td>${i.report_line || '-'}</td>
+                                <td>${i.is_escalated ? '○' : '-'}</td>
+                                <td>${i.creator || '-'}</td>
                             </tr>
                         `).join('')}
                     </tbody>
