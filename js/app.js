@@ -123,6 +123,21 @@ const App = {
         }
     },
 
+    async handleInlineUpdate(id, field, value) {
+        try {
+            await SupabaseStorage.saveIssue({
+                issue_id: id,
+                [field]: value
+            });
+            console.log(`Updated ${field} to ${value} for issue ${id}`);
+            // Refresh to ensure all dependencies (like stats or badge colors) are updated
+            await this.render();
+        } catch (err) {
+            alert('업데이트 실패: ' + err.message);
+            await this.render();
+        }
+    },
+
     async renderDashboard(container) {
         const stats = await SupabaseStorage.getStats();
         const issues = await SupabaseStorage.getIssues();
@@ -360,16 +375,39 @@ const App = {
                             <tr>
                                 <td>${i.display_id}</td>
                                 <td>${i.category || 'PMO'}</td>
-                                <td>${i.issue_type}</td>
+                                <td>
+                                    <select onchange="App.handleInlineUpdate(${i.issue_id}, 'issue_type', this.value)" style="padding: 0.2rem; border: none; background: transparent; font-size: 0.875rem;">
+                                        ${['범위', '기획', '자원', '일정', '기타'].map(t => `<option value="${t}" ${i.issue_type === t ? 'selected' : ''}>${t}</option>`).join('')}
+                                    </select>
+                                </td>
                                 <td>
                                     <strong style="color: var(--accent); cursor: pointer;" onclick="App.showDetail(${i.issue_id})">${i.title}</strong>
                                 </td>
-                                <td><span class="badge badge-${(i.severity || 'low').toLowerCase()}">${i.severity}</span></td>
-                                <td>${i.priority || '-'}</td>
-                                <td>${i.status}</td>
+                                <td>
+                                    <select onchange="App.handleInlineUpdate(${i.issue_id}, 'severity', this.value)" class="badge-select badge-${(i.severity || 'low').toLowerCase()}">
+                                        ${['Low', 'Medium', 'High', 'Critical'].map(s => `<option value="${s}" ${i.severity === s ? 'selected' : ''}>${s}</option>`).join('')}
+                                    </select>
+                                </td>
+                                <td>
+                                    <select onchange="App.handleInlineUpdate(${i.issue_id}, 'priority', this.value)" style="padding: 0.2rem; border: 1px solid var(--border); border-radius: 4px; background: white;">
+                                        <option value="-" ${!i.priority || i.priority === '-' ? 'selected' : ''}>-</option>
+                                        <option value="상" ${i.priority === '상' ? 'selected' : ''}>상</option>
+                                        <option value="중" ${i.priority === '중' ? 'selected' : ''}>중</option>
+                                        <option value="하" ${i.priority === '하' ? 'selected' : ''}>하</option>
+                                    </select>
+                                </td>
+                                <td>
+                                    <select onchange="App.handleInlineUpdate(${i.issue_id}, 'status', this.value)" style="padding: 0.2rem; border: 1px solid var(--border); border-radius: 4px; background: white; font-weight: 600;">
+                                        ${['발생', '분석중', '조치중', '종결'].map(s => `<option value="${s}" ${i.status === s ? 'selected' : ''}>${s}</option>`).join('')}
+                                    </select>
+                                </td>
                                 <td>${i.occurrence_date || '-'}</td>
-                                <td>${i.target_date || '-'}</td>
-                                <td>${i.pmo_assignee || '-'}</td>
+                                <td>
+                                    <input type="date" value="${i.target_date || ''}" onchange="App.handleInlineUpdate(${i.issue_id}, 'target_date', this.value)" style="padding: 0.1rem 0.3rem; border: 1px solid var(--border); border-radius: 4px; font-size: 0.75rem; width: 110px;">
+                                </td>
+                                <td>
+                                    <input type="text" value="${i.pmo_assignee || ''}" onblur="App.handleInlineUpdate(${i.issue_id}, 'pmo_assignee', this.value)" style="padding: 0.2rem; border: 1px solid var(--border); border-radius: 4px; width: 80px; font-size: 0.8125rem;">
+                                </td>
                                 <td>${i.related_dept || '-'}</td>
                                 <td>${i.creator || '-'}</td>
                             </tr>
