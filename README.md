@@ -32,7 +32,8 @@
 - **테스트용 계정**: 
     - ID: `pmo@eclub.com`
     - PW: `pmo1234`
-- **배포 주소**: 로컬 환경 또는 사내 서버에 업로드 후 `index.html`을 통해 접속 가능합니다.
+- **배포 주소**: [https://mohenz.github.io/pmo_management/](https://mohenz.github.io/pmo_management/)  
+  *(GitHub Actions 배포 완료 후 활성화됩니다)*
 
 ---
 
